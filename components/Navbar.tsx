@@ -16,11 +16,11 @@ export default function Navbar() {
 
           <Link href="/">Inicio</Link>
 
-          <Link href="/cursos">Curso</Link>
+          <Link href="/campus">Campus</Link>
 
           <Link href="/banco">Banco</Link>
 
-          <Link href="/simuladores">Simuladores</Link>
+          <Link href="/simulador">Simulador</Link>
 
           <Link href="/perfil">Perfil</Link>
 

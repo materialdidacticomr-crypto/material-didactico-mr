@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Navbar from "../components/Navbar";
 
 export default function Home() {
@@ -11,12 +12,16 @@ export default function Home() {
         </h1>
 
         <p className="mt-6 text-xl text-gray-600 max-w-2xl">
-          Prepárate con confianza para la Prueba de Comprobación de la Idoneidad Docente de Costa Rica.
+          Prepárate con confianza para la Prueba de Comprobación de la
+          Idoneidad Docente de Costa Rica.
         </p>
 
-        <button className="mt-10 bg-red-600 hover:bg-red-700 text-white font-semibold px-8 py-4 rounded-xl transition">
+        <Link
+          href="/campus"
+          className="mt-10 bg-red-600 hover:bg-red-700 text-white font-semibold px-8 py-4 rounded-xl transition"
+        >
           Comenzar ahora
-        </button>
+        </Link>
       </main>
     </>
   );

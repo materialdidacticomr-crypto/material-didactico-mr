@@ -2,27 +2,53 @@ import Link from "next/link";
 
 export default function Navbar() {
   return (
-    <header className="w-full border-b border-gray-200 bg-white">
-      <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-4">
+    <header className="border-b bg-white">
+      <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
 
         <Link
           href="/"
-          className="text-2xl font-bold text-red-600"
+          className="flex items-center gap-3 text-2xl font-bold text-red-600"
         >
-          Material Didáctico MR
+          <img
+            src="/logo-material-didactico-mr.png"
+            alt="Material Didáctico MR"
+            className="w-10 h-10 object-contain"
+          />
+
+          <span>
+            Material Didáctico MR
+          </span>
         </Link>
 
         <nav className="hidden md:flex gap-8 text-gray-700 font-medium">
 
-          <Link href="/">Inicio</Link>
+          <Link
+            href="/"
+            className="hover:text-red-600 transition"
+          >
+            Inicio
+          </Link>
 
-          <Link href="/campus">Campus</Link>
+          <Link
+            href="/campus"
+            className="hover:text-red-600 transition"
+          >
+            Campus
+          </Link>
 
-          <Link href="/banco">Banco</Link>
+          <Link
+            href="/banco"
+            className="hover:text-red-600 transition"
+          >
+            Banco
+          </Link>
 
-          <Link href="/simulador">Simulador</Link>
-
-          <Link href="/perfil">Perfil</Link>
+          <Link
+            href="/perfil"
+            className="hover:text-red-600 transition"
+          >
+            Perfil
+          </Link>
 
         </nav>
 

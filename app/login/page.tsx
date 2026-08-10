@@ -13,7 +13,6 @@ export default function LoginPage() {
   const [cargando, setCargando] = useState(false);
 
   const iniciarSesion = async () => {
-
     if (!correo || !password) {
       alert("Complete todos los campos.");
       return;
@@ -34,11 +33,9 @@ export default function LoginPage() {
     }
 
     router.push("/dashboard");
-
   };
 
   return (
-
     <main className="min-h-screen bg-gray-100 flex items-center justify-center">
 
       <div className="bg-white shadow-xl rounded-2xl p-10 w-full max-w-md">
@@ -54,7 +51,6 @@ export default function LoginPage() {
         <div className="space-y-5">
 
           <div>
-
             <label className="block mb-2 font-medium">
               Correo electrónico
             </label>
@@ -66,11 +62,9 @@ export default function LoginPage() {
               placeholder="correo@ejemplo.com"
               className="w-full border rounded-lg px-4 py-3"
             />
-
           </div>
 
           <div>
-
             <label className="block mb-2 font-medium">
               Contraseña
             </label>
@@ -82,7 +76,6 @@ export default function LoginPage() {
               placeholder="********"
               className="w-full border rounded-lg px-4 py-3"
             />
-
           </div>
 
           <button
@@ -109,6 +102,5 @@ export default function LoginPage() {
       </div>
 
     </main>
-
   );
 }

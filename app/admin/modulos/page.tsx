@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 
@@ -68,7 +69,9 @@ export default function ModulosAdmin() {
 
         {cargando && (
           <div className="border-2 border-dashed border-gray-200 rounded-xl p-10 text-center">
-            <div className="text-4xl mb-4">⏳</div>
+            <div className="text-4xl mb-4">
+              ⏳
+            </div>
 
             <p className="text-gray-500">
               Cargando módulos...
@@ -78,7 +81,9 @@ export default function ModulosAdmin() {
 
         {!cargando && error && (
           <div className="border-2 border-red-200 bg-red-50 rounded-xl p-6 text-center">
-            <div className="text-4xl mb-3">⚠️</div>
+            <div className="text-4xl mb-3">
+              ⚠️
+            </div>
 
             <p className="font-bold text-red-700">
               {error}
@@ -88,7 +93,9 @@ export default function ModulosAdmin() {
 
         {!cargando && !error && modulos.length === 0 && (
           <div className="border-2 border-dashed border-gray-200 rounded-xl p-10 text-center">
-            <div className="text-5xl mb-4">📚</div>
+            <div className="text-5xl mb-4">
+              📚
+            </div>
 
             <h3 className="text-xl font-bold text-gray-700">
               No hay módulos activos
@@ -104,9 +111,10 @@ export default function ModulosAdmin() {
         {!cargando && !error && modulos.length > 0 && (
           <div className="grid md:grid-cols-2 gap-6">
             {modulos.map((modulo) => (
-              <div
+              <Link
                 key={modulo.id}
-                className="border border-gray-200 rounded-2xl p-6 hover:shadow-lg transition"
+                href={`/admin/modulos/${modulo.id}`}
+                className="block border border-gray-200 rounded-2xl p-6 hover:shadow-lg hover:border-purple-300 transition cursor-pointer"
               >
                 <div className="flex items-start gap-4">
                   <div className="text-4xl">
@@ -128,14 +136,18 @@ export default function ModulosAdmin() {
                       {modulo.descripcion}
                     </p>
 
-                    <div className="mt-4">
+                    <div className="mt-4 flex items-center justify-between">
                       <span className="inline-block bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-semibold">
                         Activo
+                      </span>
+
+                      <span className="text-purple-600 font-semibold">
+                        Administrar →
                       </span>
                     </div>
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}

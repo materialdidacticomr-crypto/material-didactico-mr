@@ -302,61 +302,91 @@ export default function ModuloAdminPage() {
           </p>
 
           <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-6 mt-8">
-            <div className="border border-gray-200 rounded-2xl p-6">
-              <div className="text-4xl mb-4">
+
+            <Link
+              href={`/admin/pdfs?modulo_id=${id}`}
+              className="group border border-gray-200 rounded-2xl p-6 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 hover:border-purple-300"
+            >
+              <div className="text-4xl mb-4 transition-transform duration-200 group-hover:scale-110">
                 📄
               </div>
 
-              <h3 className="text-xl font-bold text-gray-800">
+              <h3 className="text-xl font-bold text-gray-800 group-hover:text-purple-600 transition-colors">
                 PDFs
               </h3>
 
               <p className="text-gray-500 mt-2">
                 Material de estudio en PDF.
               </p>
-            </div>
 
-            <div className="border border-gray-200 rounded-2xl p-6">
-              <div className="text-4xl mb-4">
+              <div className="mt-5 text-purple-600 font-bold">
+                Administrar PDFs →
+              </div>
+            </Link>
+
+            <Link
+              href={`/admin/videos?modulo_id=${id}`}
+              className="group border border-gray-200 rounded-2xl p-6 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 hover:border-purple-300"
+            >
+              <div className="text-4xl mb-4 transition-transform duration-200 group-hover:scale-110">
                 🎥
               </div>
 
-              <h3 className="text-xl font-bold text-gray-800">
+              <h3 className="text-xl font-bold text-gray-800 group-hover:text-purple-600 transition-colors">
                 Videos
               </h3>
 
               <p className="text-gray-500 mt-2">
                 Videos relacionados con el módulo.
               </p>
-            </div>
 
-            <div className="border border-gray-200 rounded-2xl p-6">
-              <div className="text-4xl mb-4">
+              <div className="mt-5 text-purple-600 font-bold">
+                Administrar videos →
+              </div>
+            </Link>
+
+            <Link
+              href={`/admin/preguntas?modulo_id=${id}`}
+              className="group border border-gray-200 rounded-2xl p-6 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 hover:border-purple-300"
+            >
+              <div className="text-4xl mb-4 transition-transform duration-200 group-hover:scale-110">
                 📝
               </div>
 
-              <h3 className="text-xl font-bold text-gray-800">
+              <h3 className="text-xl font-bold text-gray-800 group-hover:text-purple-600 transition-colors">
                 Preguntas
               </h3>
 
               <p className="text-gray-500 mt-2">
                 Preguntas y prácticas.
               </p>
-            </div>
 
-            <div className="border border-gray-200 rounded-2xl p-6">
-              <div className="text-4xl mb-4">
+              <div className="mt-5 text-purple-600 font-bold">
+                Administrar preguntas →
+              </div>
+            </Link>
+
+            <Link
+              href={`/admin/recursos?modulo_id=${id}`}
+              className="group border border-gray-200 rounded-2xl p-6 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 hover:border-purple-300"
+            >
+              <div className="text-4xl mb-4 transition-transform duration-200 group-hover:scale-110">
                 📚
               </div>
 
-              <h3 className="text-xl font-bold text-gray-800">
+              <h3 className="text-xl font-bold text-gray-800 group-hover:text-purple-600 transition-colors">
                 Recursos
               </h3>
 
               <p className="text-gray-500 mt-2">
                 Material complementario.
               </p>
-            </div>
+
+              <div className="mt-5 text-purple-600 font-bold">
+                Administrar recursos →
+              </div>
+            </Link>
+
           </div>
         </div>
       </div>

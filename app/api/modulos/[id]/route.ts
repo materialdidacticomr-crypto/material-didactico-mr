@@ -12,17 +12,31 @@ export async function GET(
   try {
     const { id } = await params;
 
+    if (!id) {
+      return NextResponse.json(
+        { error: "El ID del módulo es obligatorio." },
+        { status: 400 }
+      );
+    }
+
     const { data, error } = await supabaseAdmin
       .from("modulos")
       .select("id, titulo, descripcion, orden, activo, created_at")
       .eq("id", id)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error("Error obteniendo módulo:", error);
 
       return NextResponse.json(
         { error: "No se pudo obtener el módulo." },
+        { status: 500 }
+      );
+    }
+
+    if (!data) {
+      return NextResponse.json(
+        { error: "El módulo no existe." },
         { status: 404 }
       );
     }
@@ -44,6 +58,13 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
+
+    if (!id) {
+      return NextResponse.json(
+        { error: "El ID del módulo es obligatorio." },
+        { status: 400 }
+      );
+    }
 
     const body = await request.json();
 
@@ -91,7 +112,7 @@ export async function PUT(
       })
       .eq("id", id)
       .select("id, titulo, descripcion, orden, activo, created_at")
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error("Error actualizando módulo:", error);
@@ -99,6 +120,13 @@ export async function PUT(
       return NextResponse.json(
         { error: "No se pudo actualizar el módulo." },
         { status: 500 }
+      );
+    }
+
+    if (!data) {
+      return NextResponse.json(
+        { error: "El módulo no existe." },
+        { status: 404 }
       );
     }
 
@@ -120,10 +148,19 @@ export async function DELETE(
   try {
     const { id } = await params;
 
-    const { error } = await supabaseAdmin
+    if (!id) {
+      return NextResponse.json(
+        { error: "El ID del módulo es obligatorio." },
+        { status: 400 }
+      );
+    }
+
+    const { data, error } = await supabaseAdmin
       .from("modulos")
       .delete()
-      .eq("id", id);
+      .eq("id", id)
+      .select("id")
+      .maybeSingle();
 
     if (error) {
       console.error("Error eliminando módulo:", error);
@@ -131,6 +168,13 @@ export async function DELETE(
       return NextResponse.json(
         { error: "No se pudo eliminar el módulo." },
         { status: 500 }
+      );
+    }
+
+    if (!data) {
+      return NextResponse.json(
+        { error: "El módulo no existe." },
+        { status: 404 }
       );
     }
 

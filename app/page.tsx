@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Navbar from "../components/Navbar";
 import { Poppins, Lato } from "next/font/google";
 
 const poppins = Poppins({
@@ -17,7 +16,6 @@ const lato = Lato({
 export default function Home() {
   return (
     <div className={lato.className}>
-      <Navbar />
 
       <main className="relative min-h-screen overflow-hidden bg-white">
 
@@ -26,22 +24,43 @@ export default function Home() {
         ========================== */}
 
         <div
-          className="absolute inset-0 flex items-center justify-center pointer-events-none select-none"
+          className="
+            absolute
+            inset-0
+            flex
+            items-center
+            justify-center
+            pointer-events-none
+            select-none
+          "
           aria-hidden="true"
         >
           <img
             src="/logo-material-didactico-mr.png"
             alt=""
-            className="w-[650px] max-w-[85vw] opacity-[0.045]"
+            className="
+              w-[650px]
+              max-w-[85vw]
+              opacity-[0.045]
+            "
           />
         </div>
 
         {/* =========================
-            DECORACIÓN SUPERIOR
+            DECORACIÓN SUPERIOR IZQUIERDA
         ========================== */}
 
         <div
-          className="absolute top-28 left-7 sm:left-10 w-32 h-32 opacity-30 pointer-events-none"
+          className="
+            absolute
+            top-24
+            left-7
+            sm:left-10
+            w-32
+            h-32
+            opacity-30
+            pointer-events-none
+          "
           aria-hidden="true"
         >
           <div className="grid grid-cols-5 gap-3">
@@ -55,11 +74,20 @@ export default function Home() {
         </div>
 
         {/* =========================
-            DECORACIÓN INFERIOR
+            DECORACIÓN INFERIOR DERECHA
         ========================== */}
 
         <div
-          className="absolute bottom-28 right-7 sm:right-10 w-32 h-32 opacity-30 pointer-events-none"
+          className="
+            absolute
+            bottom-24
+            right-7
+            sm:right-10
+            w-32
+            h-32
+            opacity-30
+            pointer-events-none
+          "
           aria-hidden="true"
         >
           <div className="grid grid-cols-5 gap-3">
@@ -73,7 +101,7 @@ export default function Home() {
         </div>
 
         {/* =========================
-            DESTELLOS DE FONDO
+            BRILLOS DE FONDO
         ========================== */}
 
         <div
@@ -107,14 +135,14 @@ export default function Home() {
         />
 
         {/* =========================
-            HERO
+            CONTENIDO PRINCIPAL
         ========================== */}
 
         <section
           className="
             relative
             z-10
-            min-h-[calc(100vh-78px)]
+            min-h-screen
             flex
             flex-col
             items-center
@@ -129,14 +157,12 @@ export default function Home() {
           <div className="max-w-7xl w-full">
 
             {/* =========================
-                MARCA PRINCIPAL
+                MARCA
             ========================== */}
 
             <div className={poppins.className}>
 
               <h1 className="font-semibold tracking-tight">
-
-                {/* Nombre de la marca */}
 
                 <span
                   className="
@@ -148,7 +174,6 @@ export default function Home() {
                     xl:text-8xl
                     leading-tight
                     text-gray-900
-                    whitespace-nowrap
                   "
                 >
                   MATERIAL DIDÁCTICO{" "}
@@ -156,8 +181,6 @@ export default function Home() {
                     MR
                   </span>
                 </span>
-
-                {/* Academy */}
 
                 <span
                   className="
@@ -183,7 +206,7 @@ export default function Home() {
                 DETALLE DE MARCA
             ========================== */}
 
-            <div className="flex items-center justify-center gap-4 mt-7">
+            <div className="flex items-center justify-center gap-4 mt-8">
 
               <div className="h-px w-16 sm:w-24 bg-red-500" />
 
@@ -199,7 +222,7 @@ export default function Home() {
 
             <p
               className="
-                mt-8
+                mt-9
                 text-lg
                 sm:text-xl
                 md:text-2xl
@@ -217,22 +240,22 @@ export default function Home() {
             </p>
 
             {/* =========================
-                BOTÓN PRINCIPAL
+                BOTÓN INICIAR
             ========================== */}
 
             <Link
-              href="/campus"
+              href="/login"
               className="
                 inline-flex
                 items-center
                 justify-center
-                mt-10
+                mt-11
                 bg-red-600
                 hover:bg-red-700
                 text-white
                 font-bold
                 text-lg
-                px-10
+                px-12
                 py-4
                 rounded-2xl
                 shadow-lg
@@ -243,7 +266,7 @@ export default function Home() {
                 duration-300
               "
             >
-              🚀 Comenzar ahora
+              Iniciar
             </Link>
 
           </div>
@@ -261,8 +284,7 @@ export default function Home() {
               gap-5
               max-w-7xl
               w-full
-              mt-16
-              lg:mt-20
+              mt-20
             "
           >
 
@@ -295,6 +317,7 @@ export default function Home() {
         </section>
 
       </main>
+
     </div>
   );
 }

@@ -6,6 +6,20 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { getCurrentUser, UsuarioActual } from "@/lib/auth";
 
+import {
+  LayoutDashboard,
+  Users,
+  BookOpen,
+  Video,
+  FileText,
+  FolderOpen,
+  ClipboardList,
+  BarChart3,
+  Settings,
+  GraduationCap,
+  LogOut,
+} from "lucide-react";
+
 export default function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
@@ -31,47 +45,47 @@ export default function AdminSidebar() {
     {
       nombre: "Dashboard",
       ruta: "/admin",
-      icono: "🏠",
+      icono: LayoutDashboard,
     },
     {
       nombre: "Usuarios",
       ruta: "/admin/usuarios",
-      icono: "👥",
+      icono: Users,
     },
     {
       nombre: "Módulos",
       ruta: "/admin/modulos",
-      icono: "📚",
+      icono: BookOpen,
     },
     {
       nombre: "Videos",
       ruta: "/admin/videos",
-      icono: "🎥",
+      icono: Video,
     },
     {
       nombre: "PDFs",
       ruta: "/admin/pdfs",
-      icono: "📄",
+      icono: FileText,
     },
     {
       nombre: "Recursos",
       ruta: "/admin/recursos",
-      icono: "📚",
+      icono: FolderOpen,
     },
     {
       nombre: "Preguntas",
       ruta: "/admin/preguntas",
-      icono: "📝",
+      icono: ClipboardList,
     },
     {
       nombre: "Estadísticas",
       ruta: "/admin/estadisticas",
-      icono: "📊",
+      icono: BarChart3,
     },
     {
       nombre: "Configuración",
       ruta: "/admin/configuracion",
-      icono: "⚙️",
+      icono: Settings,
     },
   ];
 
@@ -79,27 +93,27 @@ export default function AdminSidebar() {
     {
       nombre: "Dashboard",
       ruta: "/admin",
-      icono: "🏠",
+      icono: LayoutDashboard,
     },
     {
       nombre: "Videos",
       ruta: "/admin/videos",
-      icono: "🎥",
+      icono: Video,
     },
     {
       nombre: "PDFs",
       ruta: "/admin/pdfs",
-      icono: "📄",
+      icono: FileText,
     },
     {
       nombre: "Recursos",
       ruta: "/admin/recursos",
-      icono: "📚",
+      icono: FolderOpen,
     },
     {
       nombre: "Preguntas",
       ruta: "/admin/preguntas",
-      icono: "📝",
+      icono: ClipboardList,
     },
   ];
 
@@ -141,33 +155,37 @@ export default function AdminSidebar() {
 
       </div>
 
-      {/* MENÚ ADMINISTRATIVO */}
+      {/* MENÚ */}
 
       <nav className="flex-1 p-4 space-y-2">
 
-        {menu.map((item) => (
+        {menu.map((item) => {
 
-          <Link
-            key={item.ruta}
-            href={item.ruta}
-            className={`flex items-center gap-3 rounded-lg px-4 py-3 transition ${
-              pathname === item.ruta
-                ? "bg-white text-red-700 font-bold"
-                : "hover:bg-red-600"
-            }`}
-          >
+          const Icono = item.icono;
 
-            <span>
-              {item.icono}
-            </span>
+          return (
+            <Link
+              key={item.ruta}
+              href={item.ruta}
+              className={`flex items-center gap-3 rounded-lg px-4 py-3 transition ${
+                pathname === item.ruta
+                  ? "bg-white text-red-700 font-bold"
+                  : "hover:bg-red-600"
+              }`}
+            >
 
-            <span>
-              {item.nombre}
-            </span>
+              <Icono
+                size={21}
+                strokeWidth={2.2}
+              />
 
-          </Link>
+              <span>
+                {item.nombre}
+              </span>
 
-        ))}
+            </Link>
+          );
+        })}
 
         {/* VOLVER AL CAMPUS */}
 
@@ -182,9 +200,10 @@ export default function AdminSidebar() {
             }`}
           >
 
-            <span>
-              🏫
-            </span>
+            <GraduationCap
+              size={21}
+              strokeWidth={2.2}
+            />
 
             <span>
               Volver al Campus
@@ -202,9 +221,18 @@ export default function AdminSidebar() {
 
         <button
           onClick={cerrarSesion}
-          className="w-full bg-white text-red-700 font-bold rounded-lg py-3 hover:bg-gray-100 transition"
+          className="w-full bg-white text-red-700 font-bold rounded-lg py-3 hover:bg-gray-100 transition flex items-center justify-center gap-2"
         >
-          🚪 Cerrar sesión
+
+          <LogOut
+            size={20}
+            strokeWidth={2.2}
+          />
+
+          <span>
+            Cerrar sesión
+          </span>
+
         </button>
 
       </div>

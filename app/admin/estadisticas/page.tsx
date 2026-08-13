@@ -90,7 +90,9 @@ export default function EstadisticasPage() {
       setCargando(true);
 
       /*
+       * ==========================================
        * CANTIDAD DE CONTENIDOS
+       * ==========================================
        */
 
       const [
@@ -110,7 +112,9 @@ export default function EstadisticasPage() {
       ]);
 
       /*
+       * ==========================================
        * INTENTOS DE EXAMEN
+       * ==========================================
        */
 
       const {
@@ -145,7 +149,9 @@ export default function EstadisticasPage() {
         (intentosData || []) as Intento[];
 
       /*
+       * ==========================================
        * CÁLCULOS GENERALES
+       * ==========================================
        */
 
       let promedio = 0;
@@ -217,7 +223,9 @@ export default function EstadisticasPage() {
       });
 
       /*
+       * ==========================================
        * RENDIMIENTO POR MÓDULO
+       * ==========================================
        */
 
       const mapaModulos: Record<
@@ -231,11 +239,6 @@ export default function EstadisticasPage() {
 
       intentos.forEach((intento) => {
         const moduloId = intento.modulo_id;
-
-        /*
-         * Supabase devuelve la relación
-         * modulos como arreglo.
-         */
 
         const titulo =
           intento.modulos?.[0]?.titulo ||
@@ -287,21 +290,53 @@ export default function EstadisticasPage() {
     }
   }
 
+  /*
+   * ==========================================
+   * DATOS PARA EL RESUMEN
+   * ==========================================
+   */
+
+  const moduloMasPracticado =
+    rendimientoModulos.length > 0
+      ? [...rendimientoModulos].sort(
+          (a, b) => b.intentos - a.intentos
+        )[0]
+      : null;
+
+  /*
+   * ==========================================
+   * CARGANDO
+   * ==========================================
+   */
+
   if (cargando) {
     return (
       <main className="min-h-screen bg-gray-100 p-10">
+
         <div className="bg-white rounded-2xl shadow p-8">
+
           <p className="text-gray-600">
             Cargando estadísticas...
           </p>
+
         </div>
+
       </main>
     );
   }
 
+  /*
+   * ==========================================
+   * PÁGINA
+   * ==========================================
+   */
+
   return (
     <main>
-      {/* ENCABEZADO */}
+
+      {/* ========================================
+          ENCABEZADO
+      ======================================== */}
 
       <div className="mb-10">
 
@@ -324,7 +359,9 @@ export default function EstadisticasPage() {
 
       </div>
 
-      {/* CONTENIDO */}
+      {/* ========================================
+          CONTENIDO DE LA PLATAFORMA
+      ======================================== */}
 
       <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
 
@@ -372,7 +409,9 @@ export default function EstadisticasPage() {
 
       </div>
 
-      {/* RESULTADOS */}
+      {/* ========================================
+          RESULTADOS DE LAS PRÁCTICAS
+      ======================================== */}
 
       <div className="mt-10">
 
@@ -421,7 +460,9 @@ export default function EstadisticasPage() {
 
       </div>
 
-      {/* RENDIMIENTO POR MÓDULO */}
+      {/* ========================================
+          RENDIMIENTO POR MÓDULO
+      ======================================== */}
 
       <div className="mt-10">
 
@@ -514,21 +555,153 @@ export default function EstadisticasPage() {
 
       </div>
 
-      {/* INFORMACIÓN */}
+      {/* ========================================
+          RESUMEN FUNCIONAL DE LA PLATAFORMA
+      ======================================== */}
 
-      <div className="mt-10 bg-white rounded-2xl shadow p-8">
+      <div className="mt-10">
 
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">
-          Resumen de la plataforma
-        </h2>
+        <div className="bg-white rounded-2xl shadow overflow-hidden">
 
-        <p className="text-gray-600 leading-relaxed">
-          Desde esta sección puede consultar
-          rápidamente la cantidad de materiales
-          registrados en la plataforma y el
-          rendimiento obtenido en las prácticas
-          realizadas por las personas estudiantes.
-        </p>
+          {/* ENCABEZADO */}
+
+          <div className="bg-gray-800 p-6 text-white">
+
+            <h2 className="text-2xl font-bold">
+              📊 Resumen de la plataforma
+            </h2>
+
+            <p className="text-gray-300 mt-1">
+              Información general de la actividad
+              registrada en la academia.
+            </p>
+
+          </div>
+
+          {/* DATOS */}
+
+          <div className="p-6 grid md:grid-cols-2 xl:grid-cols-5 gap-5">
+
+            {/* USUARIOS */}
+
+            <ResumenItem
+              icono="👥"
+              titulo="Usuarios registrados"
+              valor={estadisticas.usuarios}
+              descripcion="Cuentas registradas"
+            />
+
+            {/* PRÁCTICAS */}
+
+            <ResumenItem
+              icono="📝"
+              titulo="Prácticas realizadas"
+              valor={estadisticas.intentos}
+              descripcion="Intentos registrados"
+            />
+
+            {/* PROMEDIO */}
+
+            <ResumenItem
+              icono="📈"
+              titulo="Promedio general"
+              valor={`${estadisticas.promedio}%`}
+              descripcion="Rendimiento promedio"
+            />
+
+            {/* MEJOR RESULTADO */}
+
+            <ResumenItem
+              icono="🏆"
+              titulo="Mejor resultado"
+              valor={`${estadisticas.mejorResultado}%`}
+              descripcion="Mayor porcentaje obtenido"
+            />
+
+            {/* MÓDULO MÁS PRACTICADO */}
+
+            <div className="border rounded-xl p-5 bg-gray-50">
+
+              <div className="text-3xl mb-3">
+                📚
+              </div>
+
+              <p className="text-gray-500 text-sm">
+                Módulo más practicado
+              </p>
+
+              {moduloMasPracticado ? (
+
+                <>
+                  <h3 className="font-bold text-lg text-gray-800 mt-2 leading-tight">
+                    {moduloMasPracticado.titulo}
+                  </h3>
+
+                  <p className="text-red-600 font-bold mt-2">
+                    {moduloMasPracticado.intentos}{" "}
+                    {moduloMasPracticado.intentos === 1
+                      ? "práctica"
+                      : "prácticas"}
+                  </p>
+                </>
+
+              ) : (
+
+                <p className="font-semibold text-gray-700 mt-2">
+                  Aún no hay prácticas
+                </p>
+
+              )}
+
+            </div>
+
+          </div>
+
+          {/* MENSAJE INFORMATIVO */}
+
+          <div className="px-6 pb-6">
+
+            <div className="bg-red-50 border border-red-100 rounded-xl p-5">
+
+              <p className="text-gray-700">
+
+                <strong>
+                  Actividad de la plataforma:
+                </strong>{" "}
+
+                actualmente hay{" "}
+
+                <strong>
+                  {estadisticas.usuarios}
+                </strong>{" "}
+
+                usuarios registrados y se han
+                realizado{" "}
+
+                <strong>
+                  {estadisticas.intentos}
+                </strong>{" "}
+
+                prácticas.
+
+                {moduloMasPracticado && (
+                  <>
+                    {" "}El módulo con mayor cantidad
+                    de prácticas es{" "}
+
+                    <strong>
+                      {moduloMasPracticado.titulo}
+                    </strong>.
+                  </>
+                )}
+
+              </p>
+
+            </div>
+
+          </div>
+
+        </div>
 
       </div>
 
@@ -537,7 +710,9 @@ export default function EstadisticasPage() {
 }
 
 /*
- * COMPONENTE DE TARJETA
+ * ==========================================
+ * COMPONENTE TARJETA
+ * ==========================================
  */
 
 function Tarjeta({
@@ -571,6 +746,46 @@ function Tarjeta({
         </p>
 
       </div>
+
+    </div>
+  );
+}
+
+/*
+ * ==========================================
+ * COMPONENTE RESUMEN
+ * ==========================================
+ */
+
+function ResumenItem({
+  icono,
+  titulo,
+  valor,
+  descripcion,
+}: {
+  icono: string;
+  titulo: string;
+  valor: string | number;
+  descripcion: string;
+}) {
+  return (
+    <div className="border rounded-xl p-5 bg-gray-50">
+
+      <div className="text-3xl mb-3">
+        {icono}
+      </div>
+
+      <p className="text-gray-500 text-sm">
+        {titulo}
+      </p>
+
+      <p className="text-3xl font-bold text-gray-800 mt-2">
+        {valor}
+      </p>
+
+      <p className="text-gray-500 text-sm mt-1">
+        {descripcion}
+      </p>
 
     </div>
   );

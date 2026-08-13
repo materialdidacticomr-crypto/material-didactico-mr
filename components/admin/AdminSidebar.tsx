@@ -10,7 +10,8 @@ export default function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
 
-  const [usuario, setUsuario] = useState<UsuarioActual | null>(null);
+  const [usuario, setUsuario] =
+    useState<UsuarioActual | null>(null);
 
   useEffect(() => {
     async function cargarUsuario() {
@@ -110,6 +111,8 @@ export default function AdminSidebar() {
   return (
     <aside className="w-72 bg-red-700 text-white min-h-screen flex flex-col">
 
+      {/* ENCABEZADO */}
+
       <div className="p-6 border-b border-red-600">
 
         <h1 className="text-2xl font-bold">
@@ -138,6 +141,8 @@ export default function AdminSidebar() {
 
       </div>
 
+      {/* MENÚ ADMINISTRATIVO */}
+
       <nav className="flex-1 p-4 space-y-2">
 
         {menu.map((item) => (
@@ -151,15 +156,47 @@ export default function AdminSidebar() {
                 : "hover:bg-red-600"
             }`}
           >
-            <span>{item.icono}</span>
 
-            <span>{item.nombre}</span>
+            <span>
+              {item.icono}
+            </span>
+
+            <span>
+              {item.nombre}
+            </span>
 
           </Link>
 
         ))}
 
+        {/* VOLVER AL CAMPUS */}
+
+        <div className="pt-4 mt-4 border-t border-red-600">
+
+          <Link
+            href="/campus"
+            className={`flex items-center gap-3 rounded-lg px-4 py-3 transition ${
+              pathname.startsWith("/campus")
+                ? "bg-white text-red-700 font-bold"
+                : "hover:bg-red-600"
+            }`}
+          >
+
+            <span>
+              🏫
+            </span>
+
+            <span>
+              Volver al Campus
+            </span>
+
+          </Link>
+
+        </div>
+
       </nav>
+
+      {/* CERRAR SESIÓN */}
 
       <div className="p-4 border-t border-red-600">
 

@@ -12,9 +12,6 @@ interface Intento {
   respuestas_correctas: number;
   porcentaje: number;
   fecha: string;
-  modulos?: {
-    titulo: string;
-  }[] | null;
 }
 
 interface Estadisticas {
@@ -61,6 +58,31 @@ export default function EstadisticasPage() {
 
   useEffect(() => {
     cargarEstadisticas();
+
+    // Actualiza las estadísticas automáticamente cada 10 segundos.
+    const intervalo = setInterval(() => {
+      cargarEstadisticas();
+    }, 10000);
+
+    // También actualiza al volver a la pestaña del navegador.
+    function actualizarAlVolver() {
+      if (document.visibilityState === "visible") {
+        cargarEstadisticas();
+      }
+    }
+
+    document.addEventListener(
+      "visibilitychange",
+      actualizarAlVolver
+    );
+
+    return () => {
+      clearInterval(intervalo);
+      document.removeEventListener(
+        "visibilitychange",
+        actualizarAlVolver
+      );
+    };
   }, []);
 
   async function obtenerCantidad(
@@ -129,10 +151,7 @@ export default function EstadisticasPage() {
           total_preguntas,
           respuestas_correctas,
           porcentaje,
-          fecha,
-          modulos (
-            titulo
-          )
+          fecha
         `)
         .order("fecha", {
           ascending: false,
@@ -147,6 +166,35 @@ export default function EstadisticasPage() {
 
       const intentos =
         (intentosData || []) as Intento[];
+
+      /*
+       * ==========================================
+       * NOMBRES DE LOS MÓDULOS
+       * ==========================================
+       *
+       * Obtenemos los módulos por separado para
+       * identificar cada módulo por su ID.
+       */
+      const {
+        data: modulosData,
+        error: modulosError,
+      } = await supabase
+        .from("modulos")
+        .select("id, titulo");
+
+      if (modulosError) {
+        console.error(
+          "Error cargando módulos:",
+          modulosError
+        );
+      }
+
+      const mapaTitulosModulos: Record<string, string> = {};
+
+      (modulosData || []).forEach((modulo) => {
+        mapaTitulosModulos[modulo.id] =
+          modulo.titulo;
+      });
 
       /*
        * ==========================================
@@ -241,7 +289,7 @@ export default function EstadisticasPage() {
         const moduloId = intento.modulo_id;
 
         const titulo =
-          intento.modulos?.[0]?.titulo ||
+          mapaTitulosModulos[moduloId] ||
           "Módulo sin nombre";
 
         if (!mapaModulos[moduloId]) {

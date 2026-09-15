@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 interface Pregunta {
   id: string;
@@ -27,6 +28,87 @@ export default function PracticaClient({
   const [respuesta, setRespuesta] = useState("");
   const [mostrarResultado, setMostrarResultado] = useState(false);
   const [correctas, setCorrectas] = useState(0);
+
+  const [guardandoResultado, setGuardandoResultado] = useState(false);
+  const [resultadoGuardado, setResultadoGuardado] = useState(false);
+  const [errorGuardando, setErrorGuardando] = useState("");
+
+  const resultadoGuardadoRef = useRef(false);
+
+  /*
+   * Guardar el resultado de la práctica en Supabase
+   */
+  useEffect(() => {
+    async function guardarResultado() {
+      if (
+        indice < preguntas.length ||
+        preguntas.length === 0 ||
+        resultadoGuardadoRef.current
+      ) {
+        return;
+      }
+
+      resultadoGuardadoRef.current = true;
+      setGuardandoResultado(true);
+      setErrorGuardando("");
+
+      const porcentaje = Math.round(
+        (correctas / preguntas.length) * 100
+      );
+
+      try {
+        const {
+          data: { user },
+          error: errorUsuario,
+        } = await supabase.auth.getUser();
+
+        if (errorUsuario) {
+          throw errorUsuario;
+        }
+
+        if (!user) {
+          throw new Error(
+            "No se encontró una sesión activa."
+          );
+        }
+
+        const { error } = await supabase
+          .from("intentos_examen")
+          .insert({
+            usuario_id: user.id,
+            modulo_id: modulo.id,
+            total_preguntas: preguntas.length,
+            respuestas_correctas: correctas,
+            porcentaje: porcentaje,
+          });
+
+        if (error) {
+          throw error;
+        }
+
+        setResultadoGuardado(true);
+      } catch (error: any) {
+        console.error(
+          "Error al guardar el resultado:",
+          error
+        );
+
+        setErrorGuardando(
+          error?.message ||
+            "No se pudo guardar el resultado de la práctica."
+        );
+      } finally {
+        setGuardandoResultado(false);
+      }
+    }
+
+    guardarResultado();
+  }, [
+    indice,
+    preguntas.length,
+    correctas,
+    modulo.id,
+  ]);
 
   if (preguntas.length === 0) {
     return (
@@ -80,6 +162,10 @@ export default function PracticaClient({
     setRespuesta("");
     setMostrarResultado(false);
     setCorrectas(0);
+
+    resultadoGuardadoRef.current = false;
+    setResultadoGuardado(false);
+    setErrorGuardando("");
   }
 
   /*
@@ -164,6 +250,36 @@ export default function PracticaClient({
 
           </div>
 
+          {/* Estado del guardado */}
+
+          {guardandoResultado && (
+            <div className="mb-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
+              <p className="text-blue-700 font-semibold">
+                Guardando resultado...
+              </p>
+            </div>
+          )}
+
+          {resultadoGuardado && (
+            <div className="mb-6 bg-green-50 border border-green-200 rounded-xl p-4">
+              <p className="text-green-700 font-semibold">
+                ✅ Resultado guardado correctamente.
+              </p>
+            </div>
+          )}
+
+          {errorGuardando && (
+            <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4">
+              <p className="text-red-700 font-semibold">
+                No se pudo guardar el resultado.
+              </p>
+
+              <p className="text-red-600 text-sm mt-2 break-words">
+                {errorGuardando}
+              </p>
+            </div>
+          )}
+
           <div className="space-y-4">
 
             <button
@@ -244,16 +360,15 @@ export default function PracticaClient({
 
               if (mostrarResultado) {
 
-                if (letra === pregunta.respuesta_correcta) {
-
+                if (
+                  letra ===
+                  pregunta.respuesta_correcta
+                ) {
                   clase =
                     "w-full border rounded-xl p-4 text-left bg-green-100 border-green-600";
-
                 } else if (letra === respuesta) {
-
                   clase =
                     "w-full border rounded-xl p-4 text-left bg-red-100 border-red-600";
-
                 }
 
               }
@@ -279,7 +394,8 @@ export default function PracticaClient({
 
               <div
                 className={`rounded-xl p-6 ${
-                  respuesta === pregunta.respuesta_correcta
+                  respuesta ===
+                  pregunta.respuesta_correcta
                     ? "bg-green-100"
                     : "bg-red-100"
                 }`}
@@ -287,7 +403,8 @@ export default function PracticaClient({
 
                 <h3 className="text-xl font-bold mb-3">
 
-                  {respuesta === pregunta.respuesta_correcta
+                  {respuesta ===
+                  pregunta.respuesta_correcta
                     ? "✅ Respuesta correcta"
                     : "❌ Respuesta incorrecta"}
 

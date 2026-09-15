@@ -55,6 +55,9 @@ export default function UsuariosPage() {
   const [estudianteAbierto, setEstudianteAbierto] =
     useState<string | null>(null);
 
+  const [eliminando, setEliminando] =
+    useState<string | null>(null);
+
   /*
    * ==========================================
    * CARGAR ESTUDIANTES Y PROGRESO
@@ -73,6 +76,7 @@ export default function UsuariosPage() {
       /*
        * Si no existe sesión, intentamos renovarla.
        */
+
       if (!session) {
         const {
           data: refrescada,
@@ -140,6 +144,7 @@ export default function UsuariosPage() {
   /*
    * Cargar automáticamente al entrar.
    */
+
   useEffect(() => {
     cargarEstudiantes();
   }, []);
@@ -181,6 +186,7 @@ export default function UsuariosPage() {
       /*
        * Intentar renovar la sesión si fuera necesario.
        */
+
       if (!session) {
         const {
           data: refrescada,
@@ -252,6 +258,7 @@ export default function UsuariosPage() {
        * Actualizamos la lista después
        * de crear el usuario.
        */
+
       await cargarEstudiantes();
     } catch (error) {
       console.error(
@@ -264,6 +271,123 @@ export default function UsuariosPage() {
       );
     } finally {
       setCargando(false);
+    }
+  }
+
+  /*
+   * ==========================================
+   * ELIMINAR ESTUDIANTE
+   * ==========================================
+   */
+
+  async function eliminarEstudiante(
+    estudiante: Estudiante
+  ) {
+    const confirmar = window.confirm(
+      `¿Está seguro de eliminar a ${estudiante.nombre}?\n\n` +
+        `Esta acción eliminará también sus resultados de prácticas y no se puede deshacer.`
+    );
+
+    if (!confirmar) {
+      return;
+    }
+
+    setMensaje("");
+    setError("");
+    setEliminando(estudiante.id);
+
+    try {
+      let {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      /*
+       * Intentar renovar la sesión si fuera necesario.
+       */
+
+      if (!session) {
+        const {
+          data: refrescada,
+          error: errorRefresh,
+        } = await supabase.auth.refreshSession();
+
+        if (errorRefresh) {
+          setError(
+            "La sesión ha expirado. Inicie sesión nuevamente."
+          );
+
+          return;
+        }
+
+        session = refrescada.session;
+      }
+
+      if (!session?.access_token) {
+        setError(
+          "No se pudo obtener la sesión de administrador."
+        );
+
+        return;
+      }
+
+      const respuesta = await fetch(
+        "/api/usuarios",
+        {
+          method: "DELETE",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+
+            Authorization:
+              `Bearer ${session.access_token}`,
+          },
+
+          body: JSON.stringify({
+            id: estudiante.id,
+          }),
+        }
+      );
+
+      const resultado = await respuesta.json();
+
+      if (!respuesta.ok) {
+        setError(
+          resultado.error ||
+            "No se pudo eliminar el estudiante."
+        );
+
+        return;
+      }
+
+      /*
+       * Cerramos el detalle por si estaba abierto.
+       */
+
+      if (estudianteAbierto === estudiante.id) {
+        setEstudianteAbierto(null);
+      }
+
+      setMensaje(
+        `El estudiante ${estudiante.nombre} fue eliminado correctamente.`
+      );
+
+      /*
+       * Volvemos a cargar la lista.
+       */
+
+      await cargarEstudiantes();
+    } catch (error) {
+      console.error(
+        "Error al eliminar estudiante:",
+        error
+      );
+
+      setError(
+        "No se pudo conectar con el servidor."
+      );
+    } finally {
+      setEliminando(null);
     }
   }
 
@@ -496,12 +620,18 @@ export default function UsuariosPage() {
             disabled={cargandoEstudiantes}
             className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold px-5 py-3 rounded-xl transition"
           >
-
             🔄 Actualizar
-
           </button>
 
         </div>
+
+        {/* Mensaje general */}
+
+        {mensaje && (
+          <div className="bg-green-100 border border-green-300 text-green-700 rounded-xl px-5 py-4 mb-6">
+            {mensaje}
+          </div>
+        )}
 
         {/* Error de estudiantes */}
 
@@ -553,6 +683,10 @@ export default function UsuariosPage() {
                   estudianteAbierto ===
                   estudiante.id;
 
+                const estaEliminando =
+                  eliminando ===
+                  estudiante.id;
+
                 return (
 
                   <div
@@ -600,25 +734,53 @@ export default function UsuariosPage() {
 
                         </div>
 
-                        {/* Botón detalle */}
+                        {/* =================================
+                            BOTONES
+                        ================================== */}
 
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setEstudianteAbierto(
-                              abierto
-                                ? null
-                                : estudiante.id
-                            )
-                          }
-                          className="bg-red-600 hover:bg-red-700 text-white font-bold px-6 py-3 rounded-xl transition"
-                        >
+                        <div className="flex flex-col sm:flex-row gap-3">
 
-                          {abierto
-                            ? "Ocultar detalle ↑"
-                            : "Ver detalle →"}
+                          {/* Botón detalle */}
 
-                        </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setEstudianteAbierto(
+                                abierto
+                                  ? null
+                                  : estudiante.id
+                              )
+                            }
+                            disabled={estaEliminando}
+                            className="bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white font-bold px-6 py-3 rounded-xl transition"
+                          >
+
+                            {abierto
+                              ? "Ocultar detalle ↑"
+                              : "Ver detalle →"}
+
+                          </button>
+
+                          {/* Botón eliminar */}
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              eliminarEstudiante(
+                                estudiante
+                              )
+                            }
+                            disabled={estaEliminando}
+                            className="bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white font-bold px-6 py-3 rounded-xl transition"
+                          >
+
+                            {estaEliminando
+                              ? "Eliminando..."
+                              : "Eliminar"}
+
+                          </button>
+
+                        </div>
 
                       </div>
 

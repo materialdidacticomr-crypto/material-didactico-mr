@@ -7,147 +7,116 @@ const ROLES_VALIDOS = [
   "estudiante",
 ] as const;
 
-async function verificarAdministrador(request: Request) {
-  const autorizacion =
+type Rol = (typeof ROLES_VALIDOS)[number];
+
+/*
+ * ============================================================
+ * AUTORIZACIÓN
+ * ============================================================
+ *
+ * Comprueba que la petición venga de un usuario autenticado
+ * y que ese usuario tenga rol de administrador.
+ */
+
+async function obtenerAdministrador(
+  request: Request
+) {
+  const authorization =
     request.headers.get("authorization");
 
-  if (!autorizacion) {
-    return {
-      ok: false,
-      status: 401,
-      error: "No autorizado.",
-    };
+  if (!authorization) {
+    return null;
   }
 
-  if (!autorizacion.startsWith("Bearer ")) {
-    return {
-      ok: false,
-      status: 401,
-      error: "Token de autenticación inválido.",
-    };
+  if (!authorization.startsWith("Bearer ")) {
+    return null;
   }
 
-  const token = autorizacion
-    .replace("Bearer ", "")
-    .trim();
+  const token =
+    authorization.replace("Bearer ", "").trim();
 
   if (!token) {
-    return {
-      ok: false,
-      status: 401,
-      error: "No autorizado.",
-    };
+    return null;
   }
 
   const {
-    data: usuarioAuth,
-    error: usuarioAuthError,
+    data: { user },
+    error: authError,
   } = await supabaseAdmin.auth.getUser(token);
 
-  if (
-    usuarioAuthError ||
-    !usuarioAuth.user
-  ) {
-    return {
-      ok: false,
-      status: 401,
-      error: "La sesión no es válida.",
-    };
+  if (authError || !user) {
+    return null;
   }
 
   const {
-    data: usuarioActual,
+    data: usuario,
     error: usuarioError,
   } = await supabaseAdmin
     .from("usuarios")
-    .select(
-      "id, nombre, correo, rol, activo"
-    )
-    .eq("id", usuarioAuth.user.id)
-    .single();
+    .select("id, rol, activo")
+    .eq("id", user.id)
+    .maybeSingle();
 
-  if (
-    usuarioError ||
-    !usuarioActual
-  ) {
-    return {
-      ok: false,
-      status: 403,
-      error:
-        "No se encontró la cuenta del usuario.",
-    };
+  if (usuarioError || !usuario) {
+    return null;
   }
 
-  if (!usuarioActual.activo) {
-    return {
-      ok: false,
-      status: 403,
-      error:
-        "La cuenta del administrador está inactiva.",
-    };
+  if (usuario.rol !== "admin") {
+    return null;
   }
 
-  if (usuarioActual.rol !== "admin") {
-    return {
-      ok: false,
-      status: 403,
-      error:
-        "No tienes permisos para realizar esta acción.",
-    };
+  if (usuario.activo === false) {
+    return null;
   }
 
-  return {
-    ok: true,
-    usuario: usuarioActual,
-  };
+  return usuario;
 }
 
 /*
- * ==========================================
+ * ============================================================
  * GET
- * PROGRESO DE LOS ESTUDIANTES
- * ==========================================
+ * ============================================================
+ *
+ * Obtiene los estudiantes y calcula su progreso.
  */
 
 export async function GET(request: Request) {
   try {
-    const autorizacion =
-      await verificarAdministrador(request);
+    const administrador =
+      await obtenerAdministrador(request);
 
-    if (!autorizacion.ok) {
+    if (!administrador) {
       return NextResponse.json(
         {
-          error: autorizacion.error,
+          error: "No autorizado.",
         },
         {
-          status: autorizacion.status,
+          status: 401,
         }
       );
     }
 
     /*
-     * ==========================================
-     * OBTENER ESTUDIANTES
-     * ==========================================
+     * Obtener estudiantes.
      */
 
     const {
-      data: estudiantes,
-      error: estudiantesError,
+      data: usuarios,
+      error: usuariosError,
     } = await supabaseAdmin
       .from("usuarios")
       .select(
-        "id, nombre, correo, activo, created_at"
+        "id, nombre, correo, rol, activo, created_at"
       )
       .eq("rol", "estudiante")
       .order("nombre", {
         ascending: true,
       });
 
-    if (estudiantesError) {
+    if (usuariosError) {
       console.error(
-        "Error al obtener estudiantes:",
-        estudiantesError
+        "Error obteniendo usuarios:",
+        usuariosError
       );
 
       return NextResponse.json(
@@ -162,9 +131,7 @@ export async function GET(request: Request) {
     }
 
     /*
-     * ==========================================
-     * OBTENER INTENTOS
-     * ==========================================
+     * Obtener intentos.
      */
 
     const {
@@ -173,7 +140,15 @@ export async function GET(request: Request) {
     } = await supabaseAdmin
       .from("intentos_examen")
       .select(
-        "id, usuario_id, modulo_id, total_preguntas, respuestas_correctas, porcentaje, fecha"
+        `
+          id,
+          usuario_id,
+          modulo_id,
+          total_preguntas,
+          respuestas_correctas,
+          porcentaje,
+          fecha
+        `
       )
       .order("fecha", {
         ascending: false,
@@ -181,14 +156,14 @@ export async function GET(request: Request) {
 
     if (intentosError) {
       console.error(
-        "Error al obtener intentos:",
+        "Error obteniendo intentos:",
         intentosError
       );
 
       return NextResponse.json(
         {
           error:
-            "No se pudieron obtener los resultados de los estudiantes.",
+            "No se pudieron obtener los resultados.",
         },
         {
           status: 500,
@@ -197,9 +172,7 @@ export async function GET(request: Request) {
     }
 
     /*
-     * ==========================================
-     * OBTENER MÓDULOS
-     * ==========================================
+     * Obtener módulos.
      */
 
     const {
@@ -211,7 +184,7 @@ export async function GET(request: Request) {
 
     if (modulosError) {
       console.error(
-        "Error al obtener módulos:",
+        "Error obteniendo módulos:",
         modulosError
       );
 
@@ -226,144 +199,158 @@ export async function GET(request: Request) {
       );
     }
 
-    const mapaModulos = new Map(
-      (modulos || []).map((modulo) => [
-        modulo.id,
-        modulo.titulo,
-      ])
-    );
-
     /*
-     * ==========================================
-     * CONSTRUIR INFORMACIÓN DE CADA ESTUDIANTE
-     * ==========================================
+     * Crear mapa de módulos.
      */
 
-    const resultado = (estudiantes || []).map(
-      (estudiante) => {
-        const intentosEstudiante =
+    const mapaModulos = new Map<
+      string,
+      string
+    >();
+
+    for (const modulo of modulos || []) {
+      mapaModulos.set(
+        modulo.id,
+        modulo.titulo
+      );
+    }
+
+    /*
+     * Crear respuesta de estudiantes.
+     */
+
+    const estudiantes = (usuarios || []).map(
+      (usuario) => {
+        const intentosUsuario =
           (intentos || []).filter(
             (intento) =>
               intento.usuario_id ===
-              estudiante.id
+              usuario.id
           );
 
         const practicas =
-          intentosEstudiante.length;
+          intentosUsuario.length;
+
+        const sumaPorcentajes =
+          intentosUsuario.reduce(
+            (total, intento) =>
+              total +
+              Number(
+                intento.porcentaje || 0
+              ),
+            0
+          );
 
         const promedio =
           practicas > 0
             ? Math.round(
-                intentosEstudiante.reduce(
-                  (total, intento) =>
-                    total +
-                    Number(
-                      intento.porcentaje || 0
-                    ),
-                  0
-                ) / practicas
+                sumaPorcentajes /
+                  practicas
               )
             : 0;
 
         const mejorResultado =
           practicas > 0
             ? Math.max(
-                ...intentosEstudiante.map(
+                ...intentosUsuario.map(
                   (intento) =>
                     Number(
-                      intento.porcentaje || 0
+                      intento.porcentaje ||
+                        0
                     )
                 )
               )
             : 0;
 
         const ultimaPractica =
-          practicas > 0
-            ? intentosEstudiante[0].fecha
+          intentosUsuario.length > 0
+            ? intentosUsuario[0].fecha
             : null;
 
         /*
-         * ==========================================
-         * RENDIMIENTO POR MÓDULO
-         * ==========================================
+         * Rendimiento por módulo.
          */
 
-        const mapaPorModulo =
+        const mapaRendimiento =
           new Map<
             string,
             {
               modulo_id: string;
               titulo: string;
               practicas: number;
-              promedio: number;
+              suma: number;
             }
           >();
 
-        intentosEstudiante.forEach(
-          (intento) => {
-            const moduloId =
-              intento.modulo_id;
+        for (const intento of intentosUsuario) {
+          const moduloId =
+            intento.modulo_id;
 
-            if (!moduloId) {
-              return;
-            }
+          const titulo =
+            mapaModulos.get(
+              moduloId
+            ) || "Módulo sin nombre";
 
-            const titulo =
-              mapaModulos.get(moduloId) ||
-              "Módulo sin nombre";
+          const existente =
+            mapaRendimiento.get(
+              moduloId
+            );
 
-            const actual =
-              mapaPorModulo.get(moduloId);
+          if (existente) {
+            existente.practicas += 1;
 
-            if (!actual) {
-              mapaPorModulo.set(
-                moduloId,
-                {
-                  modulo_id: moduloId,
-                  titulo,
-                  practicas: 1,
-                  promedio: Number(
-                    intento.porcentaje || 0
-                  ),
-                }
-              );
-
-              return;
-            }
-
-            actual.practicas += 1;
-
-            actual.promedio =
-              (
-                (
-                  actual.promedio *
-                    (actual.practicas - 1) +
-                  Number(
-                    intento.porcentaje || 0
-                  )
-                ) /
-                actual.practicas
-              );
+            existente.suma += Number(
+              intento.porcentaje || 0
+            );
+          } else {
+            mapaRendimiento.set(
+              moduloId,
+              {
+                modulo_id: moduloId,
+                titulo,
+                practicas: 1,
+                suma: Number(
+                  intento.porcentaje ||
+                    0
+                ),
+              }
+            );
           }
-        );
+        }
 
         const rendimientoModulos =
           Array.from(
-            mapaPorModulo.values()
-          ).map((modulo) => ({
-            ...modulo,
-            promedio: Math.round(
-              modulo.promedio
-            ),
-          }));
+            mapaRendimiento.values()
+          )
+            .map((modulo) => ({
+              modulo_id:
+                modulo.modulo_id,
+
+              titulo:
+                modulo.titulo,
+
+              practicas:
+                modulo.practicas,
+
+              promedio:
+                Math.round(
+                  modulo.suma /
+                    modulo.practicas
+                ),
+            }))
+            .sort(
+              (a, b) =>
+                b.promedio -
+                a.promedio
+            );
 
         return {
-          id: estudiante.id,
-          nombre: estudiante.nombre,
-          correo: estudiante.correo,
-          activo: estudiante.activo,
+          id: usuario.id,
+          nombre: usuario.nombre,
+          correo: usuario.correo,
+          activo: usuario.activo,
           created_at:
-            estudiante.created_at,
+            usuario.created_at,
 
           practicas,
           promedio,
@@ -377,11 +364,11 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       ok: true,
-      estudiantes: resultado,
+      estudiantes,
     });
   } catch (error) {
     console.error(
-      "Error al obtener progreso:",
+      "Error en GET /api/usuarios:",
       error
     );
 
@@ -398,24 +385,25 @@ export async function GET(request: Request) {
 }
 
 /*
- * ==========================================
+ * ============================================================
  * POST
- * CREAR USUARIO
- * ==========================================
+ * ============================================================
+ *
+ * Crear usuario.
  */
 
 export async function POST(request: Request) {
   try {
-    const autorizacion =
-      await verificarAdministrador(request);
+    const administrador =
+      await obtenerAdministrador(request);
 
-    if (!autorizacion.ok) {
+    if (!administrador) {
       return NextResponse.json(
         {
-          error: autorizacion.error,
+          error: "No autorizado.",
         },
         {
-          status: autorizacion.status,
+          status: 401,
         }
       );
     }
@@ -446,7 +434,11 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!ROLES_VALIDOS.includes(rol)) {
+    if (
+      !ROLES_VALIDOS.includes(
+        rol as Rol
+      )
+    ) {
       return NextResponse.json(
         {
           error:
@@ -462,20 +454,26 @@ export async function POST(request: Request) {
       data,
       error,
     } =
-      await supabaseAdmin.auth.admin.createUser({
-        email: correo,
-        password,
-        email_confirm: true,
-        user_metadata: {
-          nombre,
-          rol,
-        },
-      });
+      await supabaseAdmin.auth.admin.createUser(
+        {
+          email: correo,
+          password,
 
-    if (
-      error ||
-      !data.user
-    ) {
+          email_confirm: true,
+
+          user_metadata: {
+            nombre,
+            rol,
+          },
+        }
+      );
+
+    if (error || !data.user) {
+      console.error(
+        "Error creando usuario:",
+        error
+      );
+
       return NextResponse.json(
         {
           error:
@@ -490,8 +488,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       ok: true,
+
       mensaje:
         "Usuario creado correctamente.",
+
       usuario: {
         id: data.user.id,
         nombre,
@@ -502,6 +502,242 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error(
       "Error al crear usuario:",
+      error
+    );
+
+    return NextResponse.json(
+      {
+        error:
+          "Error interno del servidor.",
+      },
+      {
+        status: 500,
+      }
+    );
+  }
+}
+
+/*
+ * ============================================================
+ * DELETE
+ * ============================================================
+ *
+ * Eliminar estudiante.
+ *
+ * IMPORTANTE:
+ *
+ * - Solo un administrador puede hacerlo.
+ * - Un administrador no puede eliminarse a sí mismo.
+ * - En esta primera versión solamente permitimos eliminar
+ *   usuarios con rol "estudiante".
+ * - Los intentos se eliminan mediante ON DELETE CASCADE.
+ */
+
+export async function DELETE(
+  request: Request
+) {
+  try {
+    const administrador =
+      await obtenerAdministrador(request);
+
+    if (!administrador) {
+      return NextResponse.json(
+        {
+          error: "No autorizado.",
+        },
+        {
+          status: 401,
+        }
+      );
+    }
+
+    const body = await request.json();
+
+    const usuarioId =
+      body?.id;
+
+    if (
+      !usuarioId ||
+      typeof usuarioId !==
+        "string"
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Debe indicar el usuario que desea eliminar.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+    /*
+     * Protección adicional:
+     * un administrador nunca puede eliminarse
+     * a sí mismo.
+     */
+
+    if (
+      usuarioId ===
+      administrador.id
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "No puede eliminar su propia cuenta de administrador.",
+        },
+        {
+          status: 403,
+        }
+      );
+    }
+
+    /*
+     * Buscar el usuario que se quiere eliminar.
+     */
+
+    const {
+      data: usuario,
+      error: usuarioError,
+    } =
+      await supabaseAdmin
+        .from("usuarios")
+        .select(
+          "id, nombre, correo, rol, activo"
+        )
+        .eq("id", usuarioId)
+        .maybeSingle();
+
+    if (usuarioError) {
+      console.error(
+        "Error buscando usuario:",
+        usuarioError
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            "No se pudo encontrar el usuario.",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+    if (!usuario) {
+      return NextResponse.json(
+        {
+          error:
+            "El usuario no existe.",
+        },
+        {
+          status: 404,
+        }
+      );
+    }
+
+    /*
+     * Por seguridad, esta primera versión
+     * solamente permite eliminar estudiantes.
+     */
+
+    if (
+      usuario.rol !==
+      "estudiante"
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Por seguridad, solamente se pueden eliminar estudiantes desde esta sección.",
+        },
+        {
+          status: 403,
+        }
+      );
+    }
+
+    /*
+     * Primero eliminamos el usuario de Supabase Auth.
+     *
+     * Esto requiere service_role y solamente se ejecuta
+     * en el servidor.
+     */
+
+    const {
+      error: authDeleteError,
+    } =
+      await supabaseAdmin.auth.admin.deleteUser(
+        usuarioId
+      );
+
+    if (authDeleteError) {
+      console.error(
+        "Error eliminando usuario de Auth:",
+        authDeleteError
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            authDeleteError.message ||
+            "No se pudo eliminar la cuenta de autenticación.",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+    /*
+     * Eliminamos también el registro de public.usuarios
+     * si todavía existe.
+     *
+     * Los intentos relacionados se eliminarán mediante
+     * ON DELETE CASCADE.
+     */
+
+    const {
+      error: usuarioDeleteError,
+    } =
+      await supabaseAdmin
+        .from("usuarios")
+        .delete()
+        .eq("id", usuarioId);
+
+    if (usuarioDeleteError) {
+      console.error(
+        "Error eliminando registro de usuarios:",
+        usuarioDeleteError
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            "La cuenta fue eliminada de autenticación, pero no se pudo completar la eliminación del perfil.",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+    return NextResponse.json({
+      ok: true,
+
+      mensaje:
+        "Estudiante eliminado correctamente.",
+
+      usuario: {
+        id: usuario.id,
+        nombre: usuario.nombre,
+        correo: usuario.correo,
+      },
+    });
+  } catch (error) {
+    console.error(
+      "Error en DELETE /api/usuarios:",
       error
     );
 

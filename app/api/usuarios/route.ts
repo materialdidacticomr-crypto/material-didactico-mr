@@ -7,154 +7,418 @@ const ROLES_VALIDOS = [
   "estudiante",
 ] as const;
 
-export async function POST(request: Request) {
+async function verificarAdministrador(request: Request) {
+  const autorizacion =
+    request.headers.get("authorization");
+
+  if (!autorizacion) {
+    return {
+      ok: false,
+      status: 401,
+      error: "No autorizado.",
+    };
+  }
+
+  if (!autorizacion.startsWith("Bearer ")) {
+    return {
+      ok: false,
+      status: 401,
+      error: "Token de autenticación inválido.",
+    };
+  }
+
+  const token = autorizacion
+    .replace("Bearer ", "")
+    .trim();
+
+  if (!token) {
+    return {
+      ok: false,
+      status: 401,
+      error: "No autorizado.",
+    };
+  }
+
+  const {
+    data: usuarioAuth,
+    error: usuarioAuthError,
+  } = await supabaseAdmin.auth.getUser(token);
+
+  if (
+    usuarioAuthError ||
+    !usuarioAuth.user
+  ) {
+    return {
+      ok: false,
+      status: 401,
+      error: "La sesión no es válida.",
+    };
+  }
+
+  const {
+    data: usuarioActual,
+    error: usuarioError,
+  } = await supabaseAdmin
+    .from("usuarios")
+    .select(
+      "id, nombre, correo, rol, activo"
+    )
+    .eq("id", usuarioAuth.user.id)
+    .single();
+
+  if (
+    usuarioError ||
+    !usuarioActual
+  ) {
+    return {
+      ok: false,
+      status: 403,
+      error:
+        "No se encontró la cuenta del usuario.",
+    };
+  }
+
+  if (!usuarioActual.activo) {
+    return {
+      ok: false,
+      status: 403,
+      error:
+        "La cuenta del administrador está inactiva.",
+    };
+  }
+
+  if (usuarioActual.rol !== "admin") {
+    return {
+      ok: false,
+      status: 403,
+      error:
+        "No tienes permisos para realizar esta acción.",
+    };
+  }
+
+  return {
+    ok: true,
+    usuario: usuarioActual,
+  };
+}
+
+/*
+ * ==========================================
+ * GET
+ * PROGRESO DE LOS ESTUDIANTES
+ * ==========================================
+ */
+
+export async function GET(request: Request) {
   try {
-    /*
-     * ==========================================
-     * 1. OBTENER TOKEN DEL USUARIO AUTENTICADO
-     * ==========================================
-     */
-
     const autorizacion =
-      request.headers.get("authorization");
+      await verificarAdministrador(request);
 
-    if (!autorizacion) {
+    if (!autorizacion.ok) {
       return NextResponse.json(
         {
-          error: "No autorizado.",
+          error: autorizacion.error,
         },
         {
-          status: 401,
-        }
-      );
-    }
-
-    if (!autorizacion.startsWith("Bearer ")) {
-      return NextResponse.json(
-        {
-          error: "Token de autenticación inválido.",
-        },
-        {
-          status: 401,
-        }
-      );
-    }
-
-    const token = autorizacion.replace(
-      "Bearer ",
-      ""
-    ).trim();
-
-    if (!token) {
-      return NextResponse.json(
-        {
-          error: "No autorizado.",
-        },
-        {
-          status: 401,
+          status: autorizacion.status,
         }
       );
     }
 
     /*
      * ==========================================
-     * 2. VERIFICAR EL USUARIO EN SUPABASE
+     * OBTENER ESTUDIANTES
      * ==========================================
      */
 
     const {
-      data: usuarioAuth,
-      error: usuarioAuthError,
-    } =
-      await supabaseAdmin.auth.getUser(token);
-
-    if (
-      usuarioAuthError ||
-      !usuarioAuth.user
-    ) {
-      return NextResponse.json(
-        {
-          error: "La sesión no es válida.",
-        },
-        {
-          status: 401,
-        }
-      );
-    }
-
-    /*
-     * ==========================================
-     * 3. BUSCAR EL USUARIO EN NUESTRA TABLA
-     * ==========================================
-     */
-
-    const {
-      data: usuarioActual,
-      error: usuarioError,
+      data: estudiantes,
+      error: estudiantesError,
     } = await supabaseAdmin
       .from("usuarios")
       .select(
-        "id, nombre, correo, rol, activo"
+        "id, nombre, correo, activo, created_at"
       )
-      .eq("id", usuarioAuth.user.id)
-      .single();
+      .eq("rol", "estudiante")
+      .order("nombre", {
+        ascending: true,
+      });
 
-    if (
-      usuarioError ||
-      !usuarioActual
-    ) {
+    if (estudiantesError) {
+      console.error(
+        "Error al obtener estudiantes:",
+        estudiantesError
+      );
+
       return NextResponse.json(
         {
           error:
-            "No se encontró la cuenta del usuario.",
+            "No se pudieron obtener los estudiantes.",
         },
         {
-          status: 403,
+          status: 500,
         }
       );
     }
 
     /*
      * ==========================================
-     * 4. COMPROBAR QUE LA CUENTA ESTÉ ACTIVA
+     * OBTENER INTENTOS
      * ==========================================
      */
 
-    if (!usuarioActual.activo) {
+    const {
+      data: intentos,
+      error: intentosError,
+    } = await supabaseAdmin
+      .from("intentos_examen")
+      .select(
+        "id, usuario_id, modulo_id, total_preguntas, respuestas_correctas, porcentaje, fecha"
+      )
+      .order("fecha", {
+        ascending: false,
+      });
+
+    if (intentosError) {
+      console.error(
+        "Error al obtener intentos:",
+        intentosError
+      );
+
       return NextResponse.json(
         {
           error:
-            "La cuenta del administrador está inactiva.",
+            "No se pudieron obtener los resultados de los estudiantes.",
         },
         {
-          status: 403,
+          status: 500,
         }
       );
     }
 
     /*
      * ==========================================
-     * 5. COMPROBAR QUE SEA ADMINISTRADOR
+     * OBTENER MÓDULOS
      * ==========================================
      */
 
-    if (usuarioActual.rol !== "admin") {
+    const {
+      data: modulos,
+      error: modulosError,
+    } = await supabaseAdmin
+      .from("modulos")
+      .select("id, titulo");
+
+    if (modulosError) {
+      console.error(
+        "Error al obtener módulos:",
+        modulosError
+      );
+
       return NextResponse.json(
         {
           error:
-            "No tienes permisos para crear usuarios.",
+            "No se pudieron obtener los módulos.",
         },
         {
-          status: 403,
+          status: 500,
         }
       );
     }
 
+    const mapaModulos = new Map(
+      (modulos || []).map((modulo) => [
+        modulo.id,
+        modulo.titulo,
+      ])
+    );
+
     /*
      * ==========================================
-     * 6. LEER DATOS DEL NUEVO USUARIO
+     * CONSTRUIR INFORMACIÓN DE CADA ESTUDIANTE
      * ==========================================
      */
+
+    const resultado = (estudiantes || []).map(
+      (estudiante) => {
+        const intentosEstudiante =
+          (intentos || []).filter(
+            (intento) =>
+              intento.usuario_id ===
+              estudiante.id
+          );
+
+        const practicas =
+          intentosEstudiante.length;
+
+        const promedio =
+          practicas > 0
+            ? Math.round(
+                intentosEstudiante.reduce(
+                  (total, intento) =>
+                    total +
+                    Number(
+                      intento.porcentaje || 0
+                    ),
+                  0
+                ) / practicas
+              )
+            : 0;
+
+        const mejorResultado =
+          practicas > 0
+            ? Math.max(
+                ...intentosEstudiante.map(
+                  (intento) =>
+                    Number(
+                      intento.porcentaje || 0
+                    )
+                )
+              )
+            : 0;
+
+        const ultimaPractica =
+          practicas > 0
+            ? intentosEstudiante[0].fecha
+            : null;
+
+        /*
+         * ==========================================
+         * RENDIMIENTO POR MÓDULO
+         * ==========================================
+         */
+
+        const mapaPorModulo =
+          new Map<
+            string,
+            {
+              modulo_id: string;
+              titulo: string;
+              practicas: number;
+              promedio: number;
+            }
+          >();
+
+        intentosEstudiante.forEach(
+          (intento) => {
+            const moduloId =
+              intento.modulo_id;
+
+            if (!moduloId) {
+              return;
+            }
+
+            const titulo =
+              mapaModulos.get(moduloId) ||
+              "Módulo sin nombre";
+
+            const actual =
+              mapaPorModulo.get(moduloId);
+
+            if (!actual) {
+              mapaPorModulo.set(
+                moduloId,
+                {
+                  modulo_id: moduloId,
+                  titulo,
+                  practicas: 1,
+                  promedio: Number(
+                    intento.porcentaje || 0
+                  ),
+                }
+              );
+
+              return;
+            }
+
+            actual.practicas += 1;
+
+            actual.promedio =
+              (
+                (
+                  actual.promedio *
+                    (actual.practicas - 1) +
+                  Number(
+                    intento.porcentaje || 0
+                  )
+                ) /
+                actual.practicas
+              );
+          }
+        );
+
+        const rendimientoModulos =
+          Array.from(
+            mapaPorModulo.values()
+          ).map((modulo) => ({
+            ...modulo,
+            promedio: Math.round(
+              modulo.promedio
+            ),
+          }));
+
+        return {
+          id: estudiante.id,
+          nombre: estudiante.nombre,
+          correo: estudiante.correo,
+          activo: estudiante.activo,
+          created_at:
+            estudiante.created_at,
+
+          practicas,
+          promedio,
+          mejorResultado,
+          ultimaPractica,
+
+          rendimientoModulos,
+        };
+      }
+    );
+
+    return NextResponse.json({
+      ok: true,
+      estudiantes: resultado,
+    });
+  } catch (error) {
+    console.error(
+      "Error al obtener progreso:",
+      error
+    );
+
+    return NextResponse.json(
+      {
+        error:
+          "Error interno del servidor.",
+      },
+      {
+        status: 500,
+      }
+    );
+  }
+}
+
+/*
+ * ==========================================
+ * POST
+ * CREAR USUARIO
+ * ==========================================
+ */
+
+export async function POST(request: Request) {
+  try {
+    const autorizacion =
+      await verificarAdministrador(request);
+
+    if (!autorizacion.ok) {
+      return NextResponse.json(
+        {
+          error: autorizacion.error,
+        },
+        {
+          status: autorizacion.status,
+        }
+      );
+    }
 
     const body = await request.json();
 
@@ -182,12 +446,6 @@ export async function POST(request: Request) {
       );
     }
 
-    /*
-     * ==========================================
-     * 7. VALIDAR ROL
-     * ==========================================
-     */
-
     if (!ROLES_VALIDOS.includes(rol)) {
       return NextResponse.json(
         {
@@ -199,12 +457,6 @@ export async function POST(request: Request) {
         }
       );
     }
-
-    /*
-     * ==========================================
-     * 8. CREAR USUARIO EN SUPABASE AUTH
-     * ==========================================
-     */
 
     const {
       data,
@@ -235,12 +487,6 @@ export async function POST(request: Request) {
         }
       );
     }
-
-    /*
-     * ==========================================
-     * 9. RESPUESTA EXITOSA
-     * ==========================================
-     */
 
     return NextResponse.json({
       ok: true,

@@ -1,61 +1,173 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import {
+  FormEvent,
+  useState,
+} from "react";
+
+import { supabase } from "@/lib/supabase";
 
 export default function UsuariosPage() {
-  const [nombre, setNombre] = useState("");
-  const [correo, setCorreo] = useState("");
-  const [password, setPassword] = useState("");
-  const [rol, setRol] = useState<"admin" | "asesora" | "estudiante">(
-    "estudiante"
-  );
+  const [nombre, setNombre] =
+    useState("");
 
-  const [cargando, setCargando] = useState(false);
-  const [mensaje, setMensaje] = useState("");
-  const [error, setError] = useState("");
+  const [correo, setCorreo] =
+    useState("");
 
-  async function crearUsuario(event: FormEvent<HTMLFormElement>) {
+  const [password, setPassword] =
+    useState("");
+
+  const [rol, setRol] =
+    useState<
+      "admin" |
+      "asesora" |
+      "estudiante"
+    >("estudiante");
+
+  const [cargando, setCargando] =
+    useState(false);
+
+  const [mensaje, setMensaje] =
+    useState("");
+
+  const [error, setError] =
+    useState("");
+
+  async function crearUsuario(
+    event: FormEvent<HTMLFormElement>
+  ) {
     event.preventDefault();
 
     setMensaje("");
     setError("");
 
-    if (!nombre || !correo || !password || !rol) {
-      setError("Complete todos los campos.");
+    if (
+      !nombre ||
+      !correo ||
+      !password ||
+      !rol
+    ) {
+      setError(
+        "Complete todos los campos."
+      );
+
       return;
     }
 
     setCargando(true);
 
     try {
-      const respuesta = await fetch("/api/usuarios", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          nombre,
-          correo,
-          password,
-          rol,
-        }),
-      });
+      /*
+       * ==========================================
+       * 1. OBTENER LA SESIÓN ACTUAL
+       * ==========================================
+       */
 
-      const resultado = await respuesta.json();
+      let {
+        data: { session },
+      } =
+        await supabase.auth.getSession();
 
-      if (!respuesta.ok) {
-        setError(resultado.error || "No se pudo crear el usuario.");
+      /*
+       * ==========================================
+       * 2. SI NO HAY SESIÓN, INTENTAR REFRESCARLA
+       * ==========================================
+       */
+
+      if (!session) {
+        const {
+          data: refrescada,
+          error: errorRefresh,
+        } =
+          await supabase.auth.refreshSession();
+
+        if (errorRefresh) {
+          setError(
+            "La sesión ha expirado. Inicie sesión nuevamente."
+          );
+
+          return;
+        }
+
+        session =
+          refrescada.session;
+      }
+
+      /*
+       * ==========================================
+       * 3. COMPROBAR QUE TENEMOS TOKEN
+       * ==========================================
+       */
+
+      if (!session?.access_token) {
+        setError(
+          "No se pudo obtener la sesión de administrador."
+        );
+
         return;
       }
 
-      setMensaje("Usuario creado correctamente.");
+      /*
+       * ==========================================
+       * 4. ENVIAR PETICIÓN SEGURA A LA API
+       * ==========================================
+       */
+
+      const respuesta =
+        await fetch("/api/usuarios", {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+
+            Authorization:
+              `Bearer ${session.access_token}`,
+          },
+
+          body: JSON.stringify({
+            nombre,
+            correo,
+            password,
+            rol,
+          }),
+        });
+
+      const resultado =
+        await respuesta.json();
+
+      if (!respuesta.ok) {
+        setError(
+          resultado.error ||
+            "No se pudo crear el usuario."
+        );
+
+        return;
+      }
+
+      /*
+       * ==========================================
+       * 5. USUARIO CREADO CORRECTAMENTE
+       * ==========================================
+       */
+
+      setMensaje(
+        "Usuario creado correctamente."
+      );
 
       setNombre("");
       setCorreo("");
       setPassword("");
       setRol("estudiante");
-    } catch {
-      setError("No se pudo conectar con el servidor.");
+    } catch (error) {
+      console.error(
+        "Error al crear usuario:",
+        error
+      );
+
+      setError(
+        "No se pudo conectar con el servidor."
+      );
     } finally {
       setCargando(false);
     }
@@ -63,26 +175,27 @@ export default function UsuariosPage() {
 
   return (
     <main>
-
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-gray-800">
           Usuarios
         </h1>
 
         <p className="text-gray-500 mt-2">
-          Crear usuarios y asignar sus roles dentro de Material Didáctico MR
+          Crear usuarios y asignar sus roles
+          dentro de Material Didáctico MR
           Academy.
         </p>
       </div>
 
       <div className="bg-white rounded-2xl shadow-lg p-8 max-w-3xl">
-
         <h2 className="text-2xl font-bold text-gray-800 mb-6">
           Crear nuevo usuario
         </h2>
 
-        <form onSubmit={crearUsuario} className="space-y-6">
-
+        <form
+          onSubmit={crearUsuario}
+          className="space-y-6"
+        >
           <div>
             <label className="block mb-2 font-semibold text-gray-700">
               Nombre completo
@@ -91,7 +204,11 @@ export default function UsuariosPage() {
             <input
               type="text"
               value={nombre}
-              onChange={(event) => setNombre(event.target.value)}
+              onChange={(event) =>
+                setNombre(
+                  event.target.value
+                )
+              }
               placeholder="Nombre del usuario"
               className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-red-500"
             />
@@ -105,7 +222,11 @@ export default function UsuariosPage() {
             <input
               type="email"
               value={correo}
-              onChange={(event) => setCorreo(event.target.value)}
+              onChange={(event) =>
+                setCorreo(
+                  event.target.value
+                )
+              }
               placeholder="correo@ejemplo.com"
               className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-red-500"
             />
@@ -119,7 +240,11 @@ export default function UsuariosPage() {
             <input
               type="password"
               value={password}
-              onChange={(event) => setPassword(event.target.value)}
+              onChange={(event) =>
+                setPassword(
+                  event.target.value
+                )
+              }
               placeholder="Contraseña"
               className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-red-500"
             />
@@ -173,13 +298,12 @@ export default function UsuariosPage() {
             disabled={cargando}
             className="w-full bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white font-bold py-4 rounded-xl transition"
           >
-            {cargando ? "Creando usuario..." : "Crear usuario"}
+            {cargando
+              ? "Creando usuario..."
+              : "Crear usuario"}
           </button>
-
         </form>
-
       </div>
-
     </main>
   );
 }

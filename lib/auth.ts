@@ -1,43 +1,31 @@
+
 import { supabase } from "./supabase";
 
 export interface UsuarioActual {
   id: string;
   nombre: string;
   correo: string;
-  rol: "admin" | "asesora" | "estudiante";
+  rol: "admin" | "asesora" | "estudiante" | "docente";
   activo: boolean;
 }
 
 export async function getCurrentUser(): Promise<UsuarioActual | null> {
-
   const {
     data: { user },
     error: authError,
   } = await supabase.auth.getUser();
 
-  console.log("========== AUTH ==========");
-  console.log(authError);
-  console.log(user);
-
-  if (!user) {
+  if (authError || !user) {
     return null;
   }
 
   const { data, error } = await supabase
     .from("usuarios")
-    .select("*")
+    .select("id, nombre, correo, rol, activo")
     .eq("id", user.id)
     .single();
 
-  console.log("========== USUARIO ==========");
-  console.log(data);
-  console.log(error);
-
-  if (error) {
-    return null;
-  }
-
-  if (!data) {
+  if (error || !data) {
     return null;
   }
 
@@ -45,14 +33,11 @@ export async function getCurrentUser(): Promise<UsuarioActual | null> {
     id: data.id,
     nombre: data.nombre,
     correo: data.correo,
-    rol: data.rol,
+    rol: data.rol as UsuarioActual["rol"],
     activo: data.activo,
   };
-
 }
 
 export async function cerrarSesion() {
-
   await supabase.auth.signOut();
-
 }
